@@ -1,0 +1,5 @@
+@import "tailwindcss";
+/* Apply orange background to table headers */
+.custom-orange-table .ant-table-thead>tr>th {
+    @apply bg-orange-500 text-white text-center font-bold;
+}
