@@ -7,7 +7,7 @@ import TaskForm from "./TaskForm"; // Import TaskForm
 
 
 const ProjectDetails = () => {
-    const { id } = useParams();
+    const { projectId:id } = useParams();
     const navigate = useNavigate(); // Proper placement
     
     const [project, setProject] = useState(null);
@@ -26,7 +26,7 @@ const ProjectDetails = () => {
                 console.error("No authentication token found.");
                 return;
             }
-             console.log("Provide id:",id)
+            console.log("Provide id:",id)
             const response = await axios.get(`http://localhost:5000/api/projects/${id}`, {
                 
                 headers: {
@@ -36,18 +36,19 @@ const ProjectDetails = () => {
 
             setProject(response.data);
             setTasks(response.data.tasks || []);
-            console.log("Project");
+            console.log(Project);
         } catch (error) {
             console.error("Error fetching project details:", error);
         }
-    };
+    }; 
+    
 
     const handleCreateTask = async (taskData) => {
-        try {
+        try { 
+            console.log(taskData); 
             const newTask = {
                 ...taskData,
                 id,
-                status: "Pending",
             };
 
             const res = await axios.post("http://localhost:5000/api/tasks", newTask, { headers });

@@ -31,6 +31,12 @@ const projectSchema = new mongoose.Schema({
             ref: "User" 
         }
     ], 
+    tasks: [ // ✅ Added this block
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Task"
+        }
+    ],
     createdBy: { 
         type: mongoose.Schema.Types.ObjectId, 
         ref: "User", 
@@ -39,3 +45,7 @@ const projectSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 module.exports = mongoose.model("Project", projectSchema);
+
+
+
+

@@ -1,4 +1,5 @@
 const Task = require("../models/task.model");
+const Project = require("../models/project.model");
 
 // Get all tasks
 exports.getAllTasks = async (req, res) => {
@@ -25,28 +26,44 @@ exports.getTaskById = async (req, res) => {
 // Create a new task
 exports.createTask = async (req, res) => {
     try {
-        //console.log("Request body:", req.body); // Debugging
-        const { taskTitle, taskDescription, taskStatus, startDate, endDate, projectId, assignedUsers } = req.body;
+        console.log("Request body:", req.body);
+        
+        const {
+            taskTitle,
+            taskDescription,
+            assignedUser,
+            startDate,
+            endDate,
+            status,
+            id // This is projectId
+        } = req.body;
+
+        const projectId = id;
+        const assignedUsers = [assignedUser]; // Convert single user to array
 
         const newTask = await Task.create({
             taskTitle,
             taskDescription,
-            taskStatus,
-            startDate,
-            endDate,
+            taskStatus: status || "Pending",
+            startDate: new Date(startDate),
+            endDate: new Date(endDate),
             projectId,
             assignedUsers,
-            createdBy: req.user.id,
+            createdBy: req.user.id // Assumes user is authenticated
         });
-        const savedTask = await newTask.save();
-        //console.log("Task saved successfully:", savedTask); // Debugging
+
+        // Push task into Project.tasks
+        await Project.findByIdAndUpdate(projectId, {
+            $push: { tasks: newTask._id }
+        });
 
         res.status(201).json(newTask);
     } catch (error) {
-        //console.error("Error creating task:", error); //Debugging
+        console.error("Error creating task:", error);
         res.status(500).json({ message: error.message });
     }
 };
+
 
 // Update a task
 exports.updateTask = async (req, res) => {

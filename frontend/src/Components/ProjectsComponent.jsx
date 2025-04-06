@@ -131,7 +131,7 @@ const ProjectsComponent = () => {
                         <div className="flex justify-between mt-4">
                             <Button onClick={() => handleEditProject(project)} className="border !border-green-500 !text-green-500">Edit</Button>
                             <Button
-                                onClick={() => navigate(`/projects/_${project._id}`)}
+                                onClick={() => navigate(`/projects/${project._id}`)}
                                 className="border !border-orange-500 !text-orange-500"
                             >
                                 View Details

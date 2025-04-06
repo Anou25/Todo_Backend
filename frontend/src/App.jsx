@@ -7,14 +7,14 @@ import UserDashboard from "./Components/UserDashboard";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 function App() {
   const myRouter = createBrowserRouter([
-    {path:'',Component:Signup},
-    {path:'login',Component:Login},
-    {path:'signup',Component:Signup},
-    {path:'dashboard',Component:Dashboard},
-     { path: "projects", element: <ProjectsComponent /> },
-    { path: "projects/:projectId", element: <ProjectDetails /> },
-    { path: 'userDashboard', Component: UserDashboard }
-  ])
+    { path: '', element: <Signup /> },
+     { path: 'login', element: <Login /> },
+     { path: 'signup', element: <Signup /> },
+     { path: 'dashboard', element: <Dashboard /> },
+     { path: 'projects', element: <ProjectsComponent /> },
+     { path: 'projects/:projectId', element: <ProjectDetails /> },
+     { path: 'userDashboard', element: <UserDashboard /> },
+   ]);
 
   return (
     <>
