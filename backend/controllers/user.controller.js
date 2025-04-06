@@ -2,14 +2,25 @@ const User = require("../models/user.model");
 const bcrypt = require("bcryptjs");
 
 // Get all users (Admin only)
+// exports.getAllUsers = async (req, res) => {
+//     try {
+//         const users = await User.find().select("-password"); // Exclude password
+//         res.json(users);
+//     } catch (error) {
+//         res.status(500).json({ message: error.message });
+//     }
+// }; 
+
 exports.getAllUsers = async (req, res) => {
     try {
-        const users = await User.find().select("-password"); // Exclude password
+        const users = await User.find({ role: { $regex: /^user$/i } }).select("-password"); // Filter by role
+        console.log(users); 
         res.json(users);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
+
 
 // Get a single user by ID
 exports.getUserById = async (req, res) => {
