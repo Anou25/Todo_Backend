@@ -328,7 +328,7 @@ const Dashboard = () => {
                   )}
                   <Form.Item name="role" label="Role" rules={[{ required: true }]}>
                     <Select placeholder="Select role">
-                      <Option value="Admin">Admin</Option>
+                      {/* <Option value="Admin">Admin</Option> */}
                       <Option value="User">User</Option>
                     </Select>
                   </Form.Item>
