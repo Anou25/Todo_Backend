@@ -36,19 +36,30 @@ exports.getUserById = async (req, res) => {
 // Create a new user (Admin only)
 exports.createUser = async (req, res) => {
     try {
-        const { fullName, email, password, role } = req.body;
-        const normalizedEmail = email.toLowerCase();
-        const existingUser = await User.findOne({ email: normalizedEmail });
-        if (existingUser) return res.status(400).json({ message: "Email already exists" });
+            const { fullName, email, password, role } = req.body;
+    
+            // Convert email to lowercase
+            const normalizedEmail = email.toLowerCase();
+    
+            let user = await User.findOne({ email: normalizedEmail });
+            if (user) return res.status(400).json({ message: 'User already exists' });
+            
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(password, salt);
+    
+            user = new User({ fullName, email: normalizedEmail, password, role });
+    
+            // Save user to the database
+            await user.save();
+            res.status(201).json({ message: 'User registered successfully', user: { id: user._id, fullName: user.fullName, email: user.email, role: user.role } });
+        } catch (error) {
+            res.status(500).json({ message: 'Server Error', error: error.message });
+        }
+}; 
 
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = await User.create({ fullName, email: normalizedEmail, password: hashedPassword, role });
-        await newUser.save();
-        res.status(201).json({ message: "User created successfully", user: newUser });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
+// 
+
+    
 
 // Update user details (Admin only)
 exports.updateUser = async (req, res) => {

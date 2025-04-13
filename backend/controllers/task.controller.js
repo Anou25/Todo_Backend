@@ -26,20 +26,18 @@ exports.getTaskById = async (req, res) => {
 // Create a new task
 exports.createTask = async (req, res) => {
     try {
-        //console.log("Request body:", req.body);
-
         const {
             taskTitle,
             taskDescription,
-            assignedUser, // single user ID from frontend
+            assignedUser, // from frontend, expected to be a single user ID
             startDate,
             endDate,
             status,
-            id // projectId
+            id // projectId from frontend
         } = req.body;
 
         const projectId = id;
-        const assignedUsers = [assignedUser]; // convert to array
+        const assignedUserArray = assignedUser ? [assignedUser] : [];
 
         const newTask = await Task.create({
             taskTitle,
@@ -48,40 +46,42 @@ exports.createTask = async (req, res) => {
             startDate: new Date(startDate),
             endDate: new Date(endDate),
             projectId,
-            assignedUsers,
-            createdBy: req.user.id
+            assignedUser: assignedUserArray,
+            createdBy: req.user.id // use _id from token
         });
 
-        // Push task into the project's task list
+        // Optional: Push task ID to the project's `tasks` array (if exists)
         await Project.findByIdAndUpdate(projectId, {
             $push: { tasks: newTask._id }
         });
 
-        // Populate assignedUsers before sending back
+        // Populate assignedUser field (instead of non-existent assignedUsers)
         const populatedTask = await Task.findById(newTask._id)
-            .populate("assignedUsers", "fullName email"); // only select fullname and email
+            .populate("assignedUser", "fullName email");
 
         res.status(201).json(populatedTask);
+
     } catch (error) {
-        console.error("Error creating task:", error);
-        res.status(500).json({ message: error.message });
+        console.error("Error creating task:", error.message);
+        res.status(500).json({ message: "Error creating task", error: error.message });
     }
 };
-
 
 
 // Update a task
 exports.updateTask = async (req, res) => {
     try {
+
         const updatedTask = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
 
         if (!updatedTask) return res.status(404).json({ message: "Task not found" });
-        //console.log("Updated Task:", updatedTask); //  Add this
+
         res.json(updatedTask);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
+
 
 // Delete a task
 exports.deleteTask = async (req, res) => {
@@ -93,12 +93,13 @@ exports.deleteTask = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
-};
+}; 
+
 // Get tasks by project ID
 exports.getTasksByProjectId = async (req, res) => {
     try {
         const projectId = req.params.projectId;
-
+        
         const tasks = await Task.find({ project: projectId })
             .populate("assignedUsers", "fullName email") // Optional: populate assigned users
             .populate("project", "projectTitle"); // Optional: populate project details
