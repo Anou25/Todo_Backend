@@ -2,20 +2,23 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/user.model");
 require("dotenv").config();
 
-//Middleware to Authenticate Users via JWT
+// Middleware to Authenticate Users via JWT
 exports.authenticateUser = (req, res, next) => {
-    const token = req.header("Authorization");
+    const authHeader = req.header("Authorization");
 
-    //console.log("Received Token:", token); // Debugging
-
-    if (!token) {
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
         return res.status(401).json({ message: "Access Denied. No token provided." });
     }
 
     try {
-        const decoded = jwt.verify(token.replace("Bearer ", ""), process.env.JWT_SECRET);
-        //console.log("Decoded Token:", decoded); // Debugging
-        req.user = decoded;
+        const token = authHeader.split(" ")[1]; // safely extract token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        if (!decoded.id) {
+            return res.status(401).json({ message: "Invalid token payload: missing user ID" });
+        }
+
+        req.user = decoded; // will contain { id, email, etc. }
         next();
     } catch (error) {
         console.error("JWT Verification Error:", error.message);
@@ -23,7 +26,7 @@ exports.authenticateUser = (req, res, next) => {
     }
 };
 
-//Middleware to Authorize Only Admin Users
+// Middleware to Authorize Only Admin Users
 exports.authorizeAdmin = async (req, res, next) => {
     try {
         const user = await User.findById(req.user.id);

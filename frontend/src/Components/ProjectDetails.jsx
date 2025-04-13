@@ -1,5 +1,5 @@
- 
- 
+
+
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -51,6 +51,7 @@ const ProjectDetails = () => {
             console.log(res);
             if (res.data) {
                 message.success("Task created successfully");
+                console.log(res.data);
                 setTasks((prevTasks) => [...prevTasks, res.data]);
             } else {
                 message.error("Task creation failed");
@@ -103,7 +104,7 @@ const ProjectDetails = () => {
         editForm.setFieldsValue({
             taskTitle: task.taskTitle,
             taskDescription: task.taskDescription,
-            assignedUser: task.assignedUser?._id || null,
+            assignedUser: task.assignedUser[0]?._id || null,
             startDate: dayjs(task.startDate),
             endDate: dayjs(task.endDate),
             status: task.taskStatus,
@@ -114,23 +115,26 @@ const ProjectDetails = () => {
     const handleEditSubmit = async () => {
         try {
             const values = await editForm.validateFields();
+    
+            // Ensure taskStatus is updated
             const updatedData = {
                 ...values,
-                taskStatus: values.status,
+                taskStatus: values.status, // Map status field properly
                 startDate: values.startDate.toISOString(),
                 endDate: values.endDate.toISOString(),
             };
+    
             await handleUpdateTask(currentTask._id, updatedData);
-            // if (values.status !== currentTask.status) {
-            //     await handleStatusUpdate(currentTask._id, values.status);
-            // }
-
+    
             setIsEditModalVisible(false);
             setCurrentTask(null);
         } catch (err) {
             console.error("Validation failed:", err);
         }
     };
+
+
+
     const filteredTasks = tasks.filter((task) => {
         const matchesSearch =
             task.taskTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -233,8 +237,8 @@ const ProjectDetails = () => {
                                 <p><strong>Task Name:</strong> {task.taskTitle}</p>
                                 <p><strong>Task Description:</strong> {task.taskDescription}</p>
                                 <p><strong>Assigned User:</strong>
-                                    {task.assignedUser
-                                        ? task.assignedUser.fullName || task.assignedUser.email || "Unnamed User"
+                                    {task.assignedUser && task.assignedUser.length > 0
+                                        ? task.assignedUser[0].fullName || task.assignedUser[0].email
                                         : <span className="text-gray-500 italic">Unassigned</span>}
                                 </p>
 
@@ -245,7 +249,8 @@ const ProjectDetails = () => {
                                     <div className="flex items-center">
                                         <strong>Task Status:</strong>
                                         <select
-                                            value={task.status}
+                                            value={task.taskStatus
+                                            }
                                             onChange={(e) => handleStatusUpdate(task._id, e.target.value)}
                                             className="ml-2 p-1 border rounded"
                                         >
@@ -287,7 +292,7 @@ const ProjectDetails = () => {
                 onCancel={() => setIsEditModalVisible(false)}
                 okText="Update"
                 okButtonProps={{
-                    style: { backgroundColor: '#fa8c16', borderColor: '#fa8c16' }, 
+                    style: { backgroundColor: '#fa8c16', borderColor: '#fa8c16' },
                     className: 'text-white'
                 }}
             >
@@ -298,8 +303,8 @@ const ProjectDetails = () => {
                     <Form.Item label="Task Description" name="taskDescription" rules={[{ required: true, message: "Required" }]}>
                         <Input.TextArea />
                     </Form.Item>
-                    <Form.Item label="Assigned User" name="assignedUsers" rules={[{ required: true }]}>
-                        <Select placeholder="Select a user">
+                    <Form.Item label="Assigned User" name="assignedUser"  rules={[{ required: true }]}>
+                        <Select placeholder="Select a user"  >
                             {project.assignedUsers?.map((user) => (
                                 <li key={user._id} value={user._id}>
                                     {user.fullName || user.email}

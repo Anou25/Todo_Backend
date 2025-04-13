@@ -70,7 +70,7 @@ const ProjectsComponent = () => {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
             };
-
+    
             const payload = {
                 projectTitle: values.projectTitle,
                 projectDescription: values.projectDescription,
@@ -79,18 +79,17 @@ const ProjectsComponent = () => {
                 endDate: values.endDate.format("YYYY-MM-DD"),
                 assignedUsers: values.assignedUsers,
             };
-
+    
             if (editingProject) {
-                await axios.put(`${API_URL}/${editingProject._id}`, payload, {
-                    headers,
-                });
+                await axios.put(`${API_URL}/${editingProject._id}`, payload, { headers });
                 fetchProjects();
                 message.success("Project updated successfully!");
             } else {
                 const response = await axios.post(API_URL, payload, { headers });
-                setProjects([...projects, response.data]);
+                setProjects((prevProjects) => [...prevProjects, response.data]);
                 message.success("Project added successfully!");
             }
+    
             setModalVisible(false);
             setEditingProject(null);
             form.resetFields();

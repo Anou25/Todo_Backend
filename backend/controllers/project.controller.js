@@ -11,8 +11,9 @@ exports.getAllProjects = async (req, res) => {
         res.json(projects);
     } catch (error) {
         res.status(500).json({ message: error.message });
-    }
+    }   
 };
+
 
 //Get a single project by ID
 exports.getProjectById = async (req, res) => {
@@ -43,27 +44,49 @@ exports.getProjectById = async (req, res) => {
 };
 
 // Create a new project
-exports.createProject = async (req, res) => {
-    try {
-        const { projectTitle, projectDescription, projectStatus, startDate, endDate, assignedUsers } = req.body;
+ // Ensure Project model is imported
 
-        const newProject = await Project.create({
-            projectTitle,
-            projectDescription,
-            projectStatus,
-            startDate,
-            endDate,
-            assignedUsers,
-            createdBy: req.user._id,
-        });
-       
-        console.log("User from token:", req.user);
 
-        res.status(201).json(newProject);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
+
+ exports.createProject = async (req, res) => {
+     try {
+         const {
+             projectTitle,
+             projectDescription,
+             projectStatus,
+             startDate,
+             endDate,
+             assignedUsers
+         } = req.body;
+ 
+        //  console.log("Incoming Project Data:", req.body);
+        //  console.log("Authenticated User ID:", req.user?.id);
+ 
+         // Optional: Basic validation
+         if (!projectTitle || !projectDescription || !startDate || !endDate) {
+             return res.status(400).json({ message: "Please provide all required fields." });
+         }
+ 
+         const newProject = await Project.create({
+             projectTitle,
+             projectDescription,
+             projectStatus,
+             startDate: new Date(startDate),
+             endDate: new Date(endDate),
+             assignedUsers,
+             createdBy: req.user.id,
+         });
+ 
+         return res.status(201).json(newProject);
+     } catch (error) {
+         console.error("Error while creating project:", error);
+         return res.status(500).json({
+             message: "Failed to create project",
+             error: error.message,
+         });
+     }
+ };
+ 
 
 //Update a project
 exports.updateProject = async (req, res) => {
