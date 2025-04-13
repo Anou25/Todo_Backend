@@ -24,7 +24,7 @@ const TaskForm = ({ assignedUsers, onTaskSubmit }) => {
             <Form.Item name="assignedUser" label="Assign User" rules={[{ required: true, message: "Select a user" }]}>
                 <Select placeholder="Select a user">
                     {assignedUsers.map((user) => (
-                        <Option key={user._id} value={user._id}>{user.name || user.email}</Option>
+                        <Option key={user._id} value={user._id}>{user.fullName || user.email}</Option>
                     ))}
                 </Select>
             </Form.Item>

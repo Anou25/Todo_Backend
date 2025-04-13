@@ -35,6 +35,9 @@ const Dashboard = () => {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [form] = Form.useForm();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
 
   const navigate = useNavigate();
 
@@ -49,19 +52,30 @@ const Dashboard = () => {
     updateTabInUrl(key);
   };
 
+  const fetchUsers = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.get(API_URL, { headers });
+      setUsers(response.data);
+    } catch (error) {
+      message.error("Failed to fetch users");
+    }
+  };
+
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const response = await axios.get(API_URL, { headers });
-        setUsers(response.data);
-      } catch (error) {
-        message.error("Failed to fetch users");
-      }
-    };
     fetchUsers();
+    const interval = setInterval(() => {
+      const shouldRefresh = localStorage.getItem("refreshUsers");
+      if (shouldRefresh === "true") {
+        fetchUsers(); // Refresh users in admin dashboard
+        localStorage.setItem("refreshUsers", "false"); // reset trigger
+      }
+    }, 2000); // check every 2 seconds
+
+    return () => clearInterval(interval);
   }, []);
+
 
   const handleSaveUser = async (values) => {
     try {
@@ -111,18 +125,40 @@ const Dashboard = () => {
     try {
       const token = localStorage.getItem("token");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      // Update status in backend
       await axios.put(`${API_URL}/${id}`, { isActive }, { headers });
-      const response = await axios.get(API_URL, { headers });
-      setUsers(response.data);
+
+      // Update status in local state immediately
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user._id === id ? { ...user, isActive } : user
+        )
+      );
     } catch (error) {
       message.error("Failed to update status");
     }
   };
 
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/login");
   };
+  
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch = user.fullName
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "active" && user.isActive) ||
+      (statusFilter === "inactive" && !user.isActive);
+
+    return matchesSearch && matchesStatus;
+  });
+
 
   return (
     <Layout className="h-screen">
@@ -170,26 +206,47 @@ const Dashboard = () => {
       <Layout className="h-full w-full">
         <Content className="p-6 bg-orange-50 h-full overflow-auto">
           {activeTab === "users" && (
-            <div className="bg-white p-6 rounded-lg shadow-lg h-full">
-              <div className="flex justify-between items-center mb-4">
+            <>
+              <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
                 <h2 className="text-2xl font-semibold text-orange-600">Users</h2>
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  className="!bg-orange-500 hover:!bg-orange-600 border-none"
-                  onClick={() => {
-                    setEditingUser(null);
-                    setDrawerVisible(true);
-                    form.resetFields();
-                  }}
-                >
-                  Add User
-                </Button>
-              </div>
+                <div className="flex gap-3 items-center">
+                  <Input
+                    placeholder="Search by name"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    allowClear
+                    style={{ width: 200 }}
+                  />
 
+                  <Select
+                    value={statusFilter}
+                    onChange={(value) => setStatusFilter(value)}
+                    style={{ width: 150 }}
+                  >
+                    <Select.Option value="all">All</Select.Option>
+                    <Select.Option value="active">Active</Select.Option>
+                    <Select.Option value="inactive">Inactive</Select.Option>
+                  </Select>
+
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    className="!bg-orange-500 hover:!bg-orange-600 border-none"
+                    onClick={() => {
+                      setEditingUser(null);
+                      setDrawerVisible(true);
+                      form.resetFields();
+                    }}
+                  >
+                    Add User
+                  </Button>
+                </div>
+              </div>
+             
               <Table
                 className="custom-orange-table"
-                dataSource={users}
+                //dataSource={users}
+                dataSource={filteredUsers}
                 rowKey="_id"
                 columns={[
                   { title: "Full Name", dataIndex: "fullName", key: "fullName" },
@@ -202,9 +259,8 @@ const Dashboard = () => {
                     render: (text, record) => (
                       <Switch
                         checked={record.isActive}
-                        onChange={(checked) =>
-                          handleToggleStatus(record._id, checked)
-                        }
+                        onChange={(checked) => handleToggleStatus(record._id, checked)}
+                        className="orange-switch"
                       />
                     ),
                   },
@@ -292,8 +348,9 @@ const Dashboard = () => {
                   </Button>
                 </Form>
               </Drawer>
-            </div>
+            </>
           )}
+
 
           {activeTab === "projects" && <ProjectsComponent />}
         </Content>

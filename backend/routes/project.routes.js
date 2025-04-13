@@ -6,6 +6,7 @@ const {
     createProject,
     updateProject,
     deleteProject,
+    getProjectsByUserId
 } = require("../controllers/project.controller");
 
 const router = express.Router();
@@ -15,5 +16,7 @@ router.get("/:id", authenticateUser, getProjectById); // Get a single project
 router.post("/", authenticateUser, createProject); // Create a project
 router.put("/:id", authenticateUser, updateProject); // Update project
 router.delete("/:id", authenticateUser, deleteProject); // Delete project
+router.get("/user/:userId", authenticateUser, getProjectsByUserId);
+
 
 module.exports = router;

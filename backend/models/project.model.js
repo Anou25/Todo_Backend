@@ -31,7 +31,7 @@ const projectSchema = new mongoose.Schema({
             ref: "User" 
         }
     ], 
-    tasks: [ // ✅ Added this block
+    tasks: [ 
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Task"

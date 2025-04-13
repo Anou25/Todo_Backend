@@ -4,7 +4,10 @@ const Project = require("../models/project.model.js");
 // Get all projects
 exports.getAllProjects = async (req, res) => {
     try {
-        const projects = await Project.find().populate("assignedUsers", "fullName email");
+        const projects = await Project.find()
+        .populate("assignedUsers", "fullName email")
+        .populate("createdBy", "fullname email"); 
+
         res.json(projects);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -21,10 +24,11 @@ exports.getProjectById = async (req, res) => {
             .populate({
                 path: 'tasks',
                 populate: {
-                    path: 'assignedUsers',
-                    select: 'fullname'
+                    path: 'assignedUser',
+                    select: 'fullname email'
                 }
-            });  
+            })
+            .populate("createdBy", "fullname email");  
 
         if (!project) {
             return res.status(404).json({ message: 'Project not found' });
@@ -50,8 +54,10 @@ exports.createProject = async (req, res) => {
             startDate,
             endDate,
             assignedUsers,
-            createdBy: req.user.id,
+            createdBy: req.user._id,
         });
+       
+        console.log("User from token:", req.user);
 
         res.status(201).json(newProject);
     } catch (error) {
@@ -83,3 +89,21 @@ exports.deleteProject = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+// Get all projects assigned to a specific user
+exports.getProjectsByUserId = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        console.log(`Fetching projects for user ID: ${userId}`);
+
+        const projects = await Project.find({ assignedUsers: userId })
+            .populate("assignedUsers", "fullName email")
+            .populate("createdBy", "fullName email")
+            .populate("tasks");
+
+        res.status(200).json(projects);
+    } catch (error) {
+        console.error("Error fetching projects by user ID:", error.stack);
+        res.status(500).json({ message: "Error fetching projects by user ID", error: error.message });
+    }
+};
+

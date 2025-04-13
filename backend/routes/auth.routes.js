@@ -22,7 +22,7 @@ router.post('/register', async (req, res) => {
 
         // Save user to the database
         await user.save();
-        res.status(201).json({ message: 'User registered successfully', user: { id: user.id, fullName: user.fullName, email: user.email, role: user.role } });
+        res.status(201).json({ message: 'User registered successfully', user: { id: user._id, fullName: user.fullName, email: user.email, role: user.role } });
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
@@ -47,7 +47,7 @@ router.post('/login', async (req, res) => {
 
         // Generate and return JWT token
         const token = user.getSignedJwtToken();
-        res.json({ token, user: { id: user.id, role: user.role } });
+        res.json({ token, user: { id: user._id, role: user.role } });
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error: error.message });
     }

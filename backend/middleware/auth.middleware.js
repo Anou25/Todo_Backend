@@ -37,3 +37,22 @@ exports.authorizeAdmin = async (req, res, next) => {
         res.status(500).json({ message: "Server error while checking admin authorization" });
     }
 };
+
+// Middleware to Authorize if User is Admin or Updating Own Profile
+exports.authorizeSelfOrAdmin = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user.id);
+
+        const isSelf = req.user.id === req.params.id;
+        const isAdmin = user && user.role === "Admin";
+
+        if (isSelf || isAdmin) {
+            next();
+        } else {
+            return res.status(403).json({ message: "Access denied - Not authorized" });
+        }
+    } catch (error) {
+        console.error("Authorization Error:", error.message);
+        res.status(500).json({ message: "Server error during authorization" });
+    }
+};

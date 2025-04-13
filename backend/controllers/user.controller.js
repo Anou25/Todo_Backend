@@ -52,10 +52,10 @@ exports.createUser = async (req, res) => {
 // Update user details (Admin only)
 exports.updateUser = async (req, res) => {
     try {
-        const { fullName, email, role } = req.body;
+        const { fullName, email, role, isActive } = req.body;
         const updatedUser = await User.findByIdAndUpdate(
             req.params.id,
-            { fullName, email, role },
+            { fullName, email, role, isActive },
             { new: true }
         ).select("-password");
 
