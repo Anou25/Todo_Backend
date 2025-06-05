@@ -1,4 +1,5 @@
-﻿using MongoDB.Bson;
+﻿using System.Text.Json.Serialization;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 namespace Todo_Backend.Models
 {
@@ -23,7 +24,9 @@ namespace Todo_Backend.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string ProjectId { get; set; } = string.Empty;
 
+        [BsonElement("AssignedUsers")] // maps to MongoDB field
         [BsonRepresentation(BsonType.ObjectId)]
+        [JsonPropertyName("assignedUsers")]
         public List<string> AssignedUsers { get; set; } = new();
 
         public string CreatedBy { get; set; } = string.Empty;

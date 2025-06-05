@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using Todo_Backend.Models;
 using Todo_Backend.Services;
@@ -8,8 +9,9 @@ using Todo_Backend.Services;
 namespace Todo_Backend.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    [Authorize]
+    [Route("api/project")]
+    //[Authorize]
+    //[AllowAnonymous]
     public class ProjectController : ControllerBase
     {
         private readonly MongoDbService _mongoDbService;
@@ -20,19 +22,41 @@ namespace Todo_Backend.Controllers
         }
 
         // Admin only: Create project
-        [HttpPost]
-        [Authorize(Roles = "Admin")]
+        [HttpPost("create")]
+        //[Authorize(Roles = "Admin")]
+        [AllowAnonymous]
+        //[Authorize]
         public async Task<IActionResult> CreateProject([FromBody] Project project)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            // Try to get user ID from token (if available)
+            var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // If token not present, fallback to a default or anonymous user ID
+            if (string.IsNullOrEmpty(userId))
+            {
+                userId = "anonymous"; // or a default ID like "dev-admin-id"
+            }
+
+            // Validate assigned users
+            if (project.AssignedUsers == null || !project.AssignedUsers.Any() ||
+                project.AssignedUsers.Any(u => string.IsNullOrWhiteSpace(u)))
+            {
+                return BadRequest("AssignedUsers must contain valid user IDs.");
+            }
+
             project.CreatedBy = userId;
+            project.StartDate = project.StartDate.Date;
+            project.EndDate = project.EndDate.Date;
+
             await _mongoDbService.Projects.InsertOneAsync(project);
-            return Ok("Project created");
+
+            return Ok("Project created successfully");
         }
 
         // Admin only: Get all projects without pagination
         [HttpGet]
-        [Authorize(Roles = "Admin")]
+        //[Authorize(Roles = "Admin")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAllProjects()
         {
             var projects = await _mongoDbService.Projects.Find(_ => true).ToListAsync();
@@ -43,31 +67,66 @@ namespace Todo_Backend.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetProject(string id)
         {
-            var project = await _mongoDbService.Projects.Find(p => p.Id == id).FirstOrDefaultAsync();
+            if (!ObjectId.TryParse(id, out ObjectId objectId))
+            {
+                return BadRequest("Invalid project ID.");
+            }
+
+            var project = await _mongoDbService.Projects.Find(p => p.Id == objectId.ToString()).FirstOrDefaultAsync();
+
             return project == null ? NotFound() : Ok(project);
         }
 
         // Admin only: Update a project
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin")]
+        //[Authorize(Roles = "Admin")]
+        [AllowAnonymous]
         public async Task<IActionResult> UpdateProject(string id, [FromBody] Project updated)
         {
+            //Validate incoming ID
+            if (string.IsNullOrEmpty(id) || !ObjectId.TryParse(id, out _))
+            {
+                return BadRequest("Invalid project ID");
+            }
+
+            //Set the correct ID on the updated project object
+            updated.Id = id;
+
             var result = await _mongoDbService.Projects.ReplaceOneAsync(p => p.Id == id, updated);
+
             return result.ModifiedCount > 0 ? Ok("Project updated") : NotFound();
         }
 
+
         // Admin only: Delete a project
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
+        //[Authorize(Roles = "Admin")]
+        [AllowAnonymous]
         public async Task<IActionResult> DeleteProject(string id)
         {
-            var result = await _mongoDbService.Projects.DeleteOneAsync(p => p.Id == id);
-            return result.DeletedCount > 0 ? Ok("Project deleted") : NotFound();
+            if (string.IsNullOrEmpty(id) || id == "undefined")
+            {
+                return BadRequest("Invalid project ID");
+            }
+
+            try
+            {
+                var result = await _mongoDbService.Projects.DeleteOneAsync(p => p.Id == id);
+                return result.DeletedCount > 0 ? Ok("Project deleted") : NotFound();
+            }
+            catch (FormatException ex)
+            {
+                return BadRequest(new { message = "Invalid project ID format", error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error deleting project", error = ex.Message });
+            }
         }
 
-        // Get all projects assigned to a specific user
-        [HttpGet("user/{userId}")]
-        public async Task<IActionResult> GetProjectsByUserId(string userId)
+            // Get all projects assigned to a specific user
+            [HttpGet("user/{userId}")]
+            public async Task<IActionResult> GetProjectsByUserId(string userId)
         {
             try
             {
@@ -83,7 +142,8 @@ namespace Todo_Backend.Controllers
 
         // Paginated, searchable, filterable project list
         [HttpGet("filter")]
-        [Authorize(Roles = "Admin")]
+        //[Authorize(Roles = "Admin")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetProjectsWithFilters(
     [FromQuery] string? status = null,
     [FromQuery] DateTime? startDate = null,

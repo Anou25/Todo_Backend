@@ -22,6 +22,9 @@ namespace Todo_Backend.Models
 
         [BsonRepresentation(BsonType.ObjectId)]
         public List<string> AssignedUsers { get; set; } = new();
+        //[BsonIgnore] // This ensures it won’t be saved to MongoDB
+        //public List<User> AssignedUsersDetails { get; set; }
+
 
         public string CreatedBy { get; set; } = string.Empty;
     }

@@ -8,6 +8,7 @@ namespace Todo_Backend.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; } = string.Empty;
 
+
         public string FullName { get; set; } = string.Empty;
 
         public string Email { get; set; } = string.Empty;
@@ -21,5 +22,6 @@ namespace Todo_Backend.Models
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         public DateTime UpdatedAt { get; set; } = DateTime.Now;
+
     }
 }

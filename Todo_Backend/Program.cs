@@ -5,12 +5,28 @@ using Todo_Backend.Services;
 using Todo_Backend.Configurations;
 using System.Security.Claims;
 using Todo_Backend.Middleware;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
+
+
 
 // Configuring MongoDB Settings
 builder.Services.Configure<MongoDBSettings>(builder.Configuration.GetSection("MongoDBSettings"));
 builder.Services.AddSingleton<MongoDbService>();
+
+// Configure CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend",
+        builder =>
+        {
+            builder.WithOrigins("http://localhost:5173")
+                   .AllowAnyHeader()
+                   .AllowAnyMethod();
+                   //.AllowCredentials();
+        });
+});
 
 // Configuring JwtSettings
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
@@ -56,8 +72,25 @@ builder.Services.AddAuthentication(options =>
 
         // [Authorize(Roles = "Admin")]
         //RoleClaimType = "role"
-        RoleClaimType = ClaimTypes.Role
+        RoleClaimType = ClaimTypes.Role,
+        ClockSkew = TimeSpan.FromMinutes(5) // ADD THIS
     };
+    // Log authentication failures
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            Console.WriteLine($"❌ Token authentication failed: {context.Exception.Message}");
+            return Task.CompletedTask;
+        },
+        OnMessageReceived = context =>
+        {
+            Console.WriteLine($"📩 Received token: {context.Token ?? "null"}");
+            return Task.CompletedTask;
+        }
+    };
+
+
 });
 
 builder.Services.AddControllers();
@@ -72,9 +105,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.UseCors("AllowFrontend");
+//app.UseHttpsRedirection();
+
 app.UseAuthentication();
-app.UseMiddleware<JwtMiddleware>();
+//app.UseMiddleware<JwtMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();

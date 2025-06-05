@@ -4,6 +4,7 @@ using Todo_Backend.Models;
 using Todo_Backend.Services;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Todo_Backend.Controllers
 {
@@ -21,6 +22,7 @@ namespace Todo_Backend.Controllers
         }
 
         [HttpPost("register")]
+        [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
             var existingUser = await _mongoDbService.Users.Find(u => u.Email == request.Email).FirstOrDefaultAsync();
